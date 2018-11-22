@@ -71,6 +71,9 @@ Page({
             totalScoreToPay: res.data.data.basicInfo.minScore
           });
         }
+        if (res.data.data.basicInfo.pingtuan) {
+          that.pingtuanList(e.id)
+        }
         that.data.goodsDetail = res.data.data;
         if (res.data.data.basicInfo.videoId) {
           that.getVideoSrc(res.data.data.basicInfo.videoId);
@@ -101,23 +104,17 @@ Page({
   },
   tobuy: function () {
     this.setData({
-      shopType: "tobuy"
+      shopType: "tobuy",
+      selectSizePrice: this.data.goodsDetail.basicInfo.minPrice
     });
     this.bindGuiGeTap();
-    /*    if (this.data.goodsDetail.properties && !this.data.canSubmit) {
-          this.bindGuiGeTap();
-          return;
-        }
-        if(this.data.buyNumber < 1){
-          wx.showModal({
-            title: '提示',
-            content: '暂时缺货哦~',
-            showCancel:false
-          })
-          return;
-        }
-        this.addShopCar();
-        this.goShopCar();*/
+  },  
+  toPingtuan: function () {
+    this.setData({
+      shopType: "toPingtuan",
+      selectSizePrice: this.data.goodsDetail.basicInfo.pingtuanPrice
+    });
+    this.bindGuiGeTap();
   },  
   /**
    * 规格选择弹出框
@@ -268,7 +265,10 @@ Page({
 	/**
 	  * 立即购买
 	  */
-  buyNow:function(){
+  buyNow: function (e){
+    let that = this
+    let shoptype = e.currentTarget.dataset.shoptype
+    console.log(shoptype)
     if (this.data.goodsDetail.properties && !this.data.canSubmit) {
       if (!this.data.canSubmit) {
         wx.showModal({
@@ -294,17 +294,40 @@ Page({
       return;
     }
     //组建立即购买信息
-    var buyNowInfo = this.buliduBuyNowInfo();
+    var buyNowInfo = this.buliduBuyNowInfo(shoptype);
     // 写入本地存储
     wx.setStorage({
       key:"buyNowInfo",
       data:buyNowInfo
     })
     this.closePopupTap();
-
-    wx.navigateTo({
-      url: "/pages/to-pay-order/index?orderType=buyNow"
-    })    
+    if (shoptype == 'toPingtuan') {
+      wx.request({
+        url: 'https://api.it120.cc/' + app.globalData.subDomain + '/shop/goods/pingtuan/open',
+        data: {
+          token: wx.getStorageSync('token'),
+          goodsId: that.data.goodsDetail.basicInfo.id
+        },
+        success: function (res) {
+          if (res.data.code != 0) {
+            wx.showToast({
+              title: res.data.msg,
+              icon: 'none',
+              duration: 2000
+            })
+            return
+          }
+          wx.navigateTo({
+            url: "/pages/to-pay-order/index?orderType=buyNow&pingtuanOpenId=" + res.data.data.id
+          }) 
+        }
+      })      
+    } else {
+      wx.navigateTo({
+        url: "/pages/to-pay-order/index?orderType=buyNow"
+      }) 
+    }
+       
   },
   /**
    * 组建购物车信息
@@ -356,7 +379,7 @@ Page({
 	/**
 	 * 组建立即购买信息
 	 */
-  buliduBuyNowInfo: function () {
+  buliduBuyNowInfo: function (shoptype) {
     var shopCarMap = {};
     shopCarMap.goodsId = this.data.goodsDetail.basicInfo.id;
     shopCarMap.pic = this.data.goodsDetail.basicInfo.pic;
@@ -365,6 +388,9 @@ Page({
     shopCarMap.propertyChildIds = this.data.propertyChildIds;
     shopCarMap.label = this.data.propertyChildNames;
     shopCarMap.price = this.data.selectSizePrice;
+    if (shoptype == 'toPingtuan') {
+      shopCarMap.price = this.data.goodsDetail.basicInfo.pingtuanPrice;
+    }
     shopCarMap.score = this.data.totalScoreToPay;
     shopCarMap.left = "";
     shopCarMap.active = true;
@@ -424,6 +450,22 @@ Page({
           //console.log(res.data.data);
           that.setData({
             reputation: res.data.data
+          });
+        }
+      }
+    })
+  },
+  pingtuanList: function (goodsId) {
+    var that = this;
+    wx.request({
+      url: 'https://api.it120.cc/' + app.globalData.subDomain + '/shop/goods/pingtuan/list',
+      data: {
+        goodsId: goodsId
+      },
+      success: function (res) {
+        if (res.data.code == 0) {          
+          that.setData({
+            pingtuanList: res.data.data
           });
         }
       }
@@ -493,4 +535,11 @@ Page({
       }
     })
   },
+  joinPingtuan: function (e) {
+    console.log(e)
+    let pingtuanopenid = e.currentTarget.dataset.pingtuanopenid
+    wx.navigateTo({
+      url: "/pages/to-pay-order/index?orderType=buyNow&pingtuanOpenId=" + pingtuanopenid
+    }) 
+  }
 })

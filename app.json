@@ -16,13 +16,15 @@
     "pages/recharge/index",
     "pages/withdraw/index",
     "pages/kanjia/index",
-    "pages/authorize/index"
+    "pages/authorize/index",
+    "pages/score-excharge/index"
   ],
   "window":{
     "backgroundTextStyle":"light",
     "navigationBarBackgroundColor": "#fff",
     "navigationBarTitleText": "WeChat",
-    "navigationBarTextStyle":"black"
+    "navigationBarTextStyle":"black",
+    "onReachBottomDistance":50
   },
   "tabBar": {
     "color": "#6e6d6b",
@@ -47,5 +49,8 @@
       "selectedIconPath": "images/nav/my-on.png",
       "text": "我的"
     }]
-  }
+  },
+  "navigateToMiniProgramAppIdList": [
+    "wx56c8f077de74b07c"
+  ]
 }
